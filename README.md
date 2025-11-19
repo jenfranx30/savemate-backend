@@ -2,7 +2,7 @@
 
 **Node.js/Express API for local deals and discounts platform**
 
-## Tech Stack
+##  Tech Stack
 
 - Node.js 18+
 - Express.js 4.x
@@ -12,7 +12,7 @@
 - Cloudinary (Image storage)
 - bcryptjs (Password hashing)
 
-## Installation
+##  Installation
 
 ### Prerequisites
 - Node.js 18+ installed
@@ -32,8 +32,20 @@ cd savemate-backend
 npm install
 ```
 
-3. Create '.env' file in root (see `.env.example` for template):
-
+3. Create `.env` file in root (see `.env.example` for template):
+```env
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_super_secret_key_min_32_chars
+JWT_REFRESH_SECRET=your_refresh_secret_key
+JWT_EXPIRE=7d
+JWT_REFRESH_EXPIRE=30d
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+FRONTEND_URL=http://localhost:3000
+```
 
 4. Start development server:
 ```bash
@@ -42,16 +54,47 @@ npm run dev
 
 Server will run at http://localhost:5000
 
-## Project Structure
+##  Project Structure
 
+```
+savemate-backend/
+├── config/
+│   ├── database.js         # MongoDB connection
+│   └── cloudinary.js       # Cloudinary config
+├── models/
+│   ├── User.js             # User schema
+│   ├── Deal.js             # Deal schema
+│   └── Business.js         # Business schema
+├── controllers/
+│   ├── authController.js   # Authentication logic
+│   ├── userController.js   # User operations
+│   ├── dealController.js   # Deal operations
+│   └── businessController.js # Business operations
+├── routes/
+│   ├── auth.js             # Auth routes
+│   ├── users.js            # User routes
+│   ├── deals.js            # Deal routes
+│   └── business.js         # Business routes
+├── middleware/
+│   ├── auth.js             # JWT authentication
+│   └── error.js            # Error handling
+├── utils/
+│   └── generateToken.js    # JWT token generation
+├── server.js               # Entry point
+├── .env                    # Environment variables (not committed)
+├── .env.example            # Template for .env
+├── .gitignore
+├── package.json
+└── README.md
+```
 
-## Available Scripts
+##  Available Scripts
 
 - `npm start` - Start production server
 - `npm run dev` - Start development server with nodemon
 - `npm test` - Run tests (to be implemented)
 
-## API Endpoints
+##  API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
@@ -82,23 +125,47 @@ Server will run at http://localhost:5000
 
 **Full API Documentation:** Coming in Week 2
 
-## Environment Variables
+##  Environment Variables
 
 Create a `.env` file based on `.env.example`:
 
+```env
+# Server Configuration
+NODE_ENV=development
+PORT=5000
+
+# Database
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/savemate
+
+# JWT Secrets (Generate random 32+ character strings)
+JWT_SECRET=your_super_secret_key_minimum_32_characters_long
+JWT_REFRESH_SECRET=your_refresh_secret_also_32_chars_minimum
+
+# JWT Expiration
+JWT_EXPIRE=7d
+JWT_REFRESH_EXPIRE=30d
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+# Frontend URL (for CORS)
+FRONTEND_URL=http://localhost:3000
+```
 
 **Security Notes:**
 - Never commit `.env` file to Git
 - Use strong, random secrets (32+ characters)
 - Rotate secrets regularly in production
 
-##  Related Repositories
+## Related Repositories
 
 - **Frontend App:** [savemate-frontend](https://github.com/jenfranx30/savemate-frontend)
 - **Documentation:** [savemate-docs](https://github.com/jenfranx30/savemate-docs)
 
 
-##  Database Schema
+## Database Schema
 
 **Collections:**
 - `users` - User accounts (regular users and businesses)
@@ -108,7 +175,8 @@ Create a `.env` file based on `.env.example`:
 
 **Full schema documentation:** See `savemate-docs` repository
 
-##  Testing
+## Testing
+
 ```bash
 # Install dependencies
 npm install
@@ -122,7 +190,7 @@ npm test
 # - REST Client extension
 ```
 
-##  Troubleshooting
+## Troubleshooting
 
 **Port 5000 already in use:**
 ```bash
@@ -141,11 +209,11 @@ rm -rf node_modules package-lock.json
 npm install
 ```
 
-##  License
+## License
 
-Academic project for WSB University - Winter Semester 2025-2026
+Academic project for WSB University - Winter 2025-2026
 
 ---
 
-**Status:**  In Progress  
+**Status:**  In Development  
 **Last Updated:** November 26, 2025
