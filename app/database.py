@@ -6,6 +6,11 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from app.config import settings
 
+from app.models.user import User
+from app.models.deal import Deal
+from app.models.business import Business
+from app.models.category import Category
+
 
 class Database:
     """Database connection manager"""
@@ -27,7 +32,10 @@ class Database:
             await init_beanie(
                 database=database,
                 document_models=[
-                    # Models will be added here in Phase 2
+                    User,
+        	    Deal,
+        	    Business,
+        	    Category,
                 ]
             )
             
