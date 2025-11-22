@@ -1,219 +1,481 @@
-# SaveMate Backend
+# SaveMate Backend API
 
-**Node.js/Express API for local deals and discounts platform**
+**Modern Python/FastAPI backend for SaveMate - Local Deals Platform**
 
-##  Tech Stack
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green.svg)](https://fastapi.tiangolo.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0%2B-brightgreen.svg)](https://www.mongodb.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-- Node.js 18+
-- Express.js 4.x
-- MongoDB Atlas
-- Mongoose 7.x
-- JWT Authentication
-- Cloudinary (Image storage)
-- bcryptjs (Password hashing)
+---
 
-##  Installation
+## Table of Contents
 
-### Prerequisites
-- Node.js 18+ installed
-- MongoDB Atlas account
-- Cloudinary account (free tier)
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the Server](#running-the-server)
+- [API Documentation](#api-documentation)
+- [Database Schema](#database-schema)
+- [Development](#development)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [Team](#team)
 
-### Setup
+---
 
-1. Clone the repository:
+## Overview
+
+SaveMate is a location-based deals platform that helps users discover local promotions and discounts. This repository contains the backend API built with FastAPI, MongoDB, and modern Python best practices.
+
+**Key Highlights:**
+- ⚡ High-performance async FastAPI framework
+- 🗄️ MongoDB with Beanie ODM for flexible data modeling
+- 🔐 JWT-based authentication with secure password hashing
+- 📍 Geospatial queries for location-based deal discovery
+- 📸 Cloud-based image storage with Cloudinary
+- 📚 Automatic interactive API documentation (Swagger UI)
+- 🎨 Type-safe with Pydantic models and Python type hints
+
+---
+
+## Tech Stack
+
+### **Core Framework**
+- **FastAPI** (0.104.1) - Modern, fast web framework for building APIs
+- **Uvicorn** (0.24.0) - ASGI server for production-ready performance
+- **Python** (3.11+) - Latest Python with enhanced performance
+
+### **Database**
+- **MongoDB** (7.0+) - NoSQL database for flexible data storage
+- **Motor** (3.3.2) - Async MongoDB driver
+- **Beanie** (1.23.6) - Async ODM for MongoDB with Pydantic integration
+
+### **Authentication & Security**
+- **python-jose** (3.3.0) - JWT token generation and validation
+- **passlib[bcrypt]** (1.7.4) - Secure password hashing
+- **python-multipart** (0.0.6) - File upload support
+
+### **Data Validation**
+- **Pydantic** (2.5.0) - Data validation using Python type hints
+- **pydantic-settings** (2.1.0) - Settings management
+- **email-validator** (2.1.0) - Email validation
+
+### **Cloud Services**
+- **Cloudinary** (1.36.0) - Image upload and optimization
+
+### **Development Tools**
+- **pytest** (7.4.3) - Testing framework
+- **black** (23.12.0) - Code formatting
+- **flake8** (6.1.0) - Linting
+
+---
+
+## Features
+
+### **Implemented (Phase 1 ✅)**
+- [x] FastAPI application with CORS support
+- [x] MongoDB connection with async support
+- [x] Environment-based configuration
+- [x] Automatic API documentation (Swagger UI & ReDoc)
+- [x] Health check endpoints
+- [x] Project structure with best practices
+
+### **Work in Progress (Phase 2-4)**
+- [ ] User authentication (register, login, JWT)
+- [ ] User profile management
+- [ ] Deal CRUD operations
+- [ ] Business management
+- [ ] Category system
+- [ ] Geospatial queries (nearby deals)
+- [ ] Image upload with Cloudinary
+- [ ] Search and filtering
+- [ ] Rate limiting
+- [ ] Comprehensive test coverage
+
+---
+
+## 📁 Project Structure
+
+```
+savemate-backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py                 # FastAPI application entry point
+│   ├── config.py               # Configuration and settings
+│   ├── database.py             # MongoDB connection setup
+│   │
+│   ├── models/                 # Beanie document models
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   ├── deal.py
+│   │   ├── business.py
+│   │   └── category.py
+│   │
+│   ├── schemas/                # Pydantic schemas (request/response)
+│   │   ├── __init__.py
+│   │   ├── user_schema.py
+│   │   ├── deal_schema.py
+│   │   ├── auth_schema.py
+│   │   └── common_schema.py
+│   │
+│   ├── api/                    # API route handlers
+│   │   ├── __init__.py
+│   │   ├── deps.py             # Dependencies (auth, etc.)
+│   │   └── routes/
+│   │       ├── __init__.py
+│   │       ├── auth.py
+│   │       ├── users.py
+│   │       ├── deals.py
+│   │       ├── businesses.py
+│   │       └── categories.py
+│   │
+│   ├── services/               # Business logic layer
+│   │   ├── __init__.py
+│   │   ├── auth_service.py
+│   │   ├── user_service.py
+│   │   ├── deal_service.py
+│   │   └── cloudinary_service.py
+│   │
+│   ├── utils/                  # Utility functions
+│   │   ├── __init__.py
+│   │   ├── security.py
+│   │   └── validators.py
+│   │
+│   └── middleware/             # Custom middleware
+│       ├── __init__.py
+│       └── error_handler.py
+│
+├── tests/                      # Test files
+│   ├── test_auth.py
+│   ├── test_deals.py
+│   └── test_users.py
+│
+├── .env                        # Environment variables (not in git)
+├── .env.example               # Environment variables template
+├── .gitignore                 # Git ignore rules
+├── requirements.txt           # Python dependencies
+└── README.md                  # This file
+```
+
+---
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- **Python 3.11+** installed ([Download](https://www.python.org/downloads/))
+- **MongoDB Atlas** account (free tier) or local MongoDB
+- **Git** installed
+- **Code editor** (VS Code recommended)
+
+---
+
+## Installation
+
+### **1. Clone the Repository**
+
 ```bash
 git clone https://github.com/jenfranx30/savemate-backend.git
 cd savemate-backend
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create `.env` file in root (see `.env.example` for template):
-```env
-NODE_ENV=development
-PORT=5000
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_super_secret_key_min_32_chars
-JWT_REFRESH_SECRET=your_refresh_secret_key
-JWT_EXPIRE=7d
-JWT_REFRESH_EXPIRE=30d
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-FRONTEND_URL=http://localhost:3000
-```
-
-4. Start development server:
-```bash
-npm run dev
-```
-
-Server will run at http://localhost:5000
-
-##  Project Structure
-
-```
-savemate-backend/
-├── config/
-│   ├── database.js         # MongoDB connection
-│   └── cloudinary.js       # Cloudinary config
-├── models/
-│   ├── User.js             # User schema
-│   ├── Deal.js             # Deal schema
-│   └── Business.js         # Business schema
-├── controllers/
-│   ├── authController.js   # Authentication logic
-│   ├── userController.js   # User operations
-│   ├── dealController.js   # Deal operations
-│   └── businessController.js # Business operations
-├── routes/
-│   ├── auth.js             # Auth routes
-│   ├── users.js            # User routes
-│   ├── deals.js            # Deal routes
-│   └── business.js         # Business routes
-├── middleware/
-│   ├── auth.js             # JWT authentication
-│   └── error.js            # Error handling
-├── utils/
-│   └── generateToken.js    # JWT token generation
-├── server.js               # Entry point
-├── .env                    # Environment variables (not committed)
-├── .env.example            # Template for .env
-├── .gitignore
-├── package.json
-└── README.md
-```
-
-##  Available Scripts
-
-- `npm start` - Start production server
-- `npm run dev` - Start development server with nodemon
-- `npm test` - Run tests (to be implemented)
-
-##  API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `POST /api/auth/refresh` - Refresh access token
-
-### Users
-- `GET /api/users/profile` - Get user profile
-- `PUT /api/users/profile` - Update user profile
-- `POST /api/users/favorites/:dealId` - Save deal to favorites
-- `DELETE /api/users/favorites/:dealId` - Remove from favorites
-- `GET /api/users/favorites` - Get user's favorite deals
-
-### Deals
-- `GET /api/deals` - Get all deals (with pagination)
-- `GET /api/deals/:id` - Get single deal
-- `POST /api/deals` - Create deal (business only)
-- `PUT /api/deals/:id` - Update deal (business only)
-- `DELETE /api/deals/:id` - Delete deal (business only)
-- `GET /api/deals/search` - Search deals
-
-### Business
-- `POST /api/business/register` - Register business
-- `GET /api/business/:id` - Get business details
-- `PUT /api/business/:id` - Update business
-- `GET /api/business/:id/deals` - Get business deals
-
-**Full API Documentation:** Coming in Week 2
-
-##  Environment Variables
-
-Create a `.env` file based on `.env.example`:
-
-```env
-# Server Configuration
-NODE_ENV=development
-PORT=5000
-
-# Database
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/savemate
-
-# JWT Secrets (Generate random 32+ character strings)
-JWT_SECRET=your_super_secret_key_minimum_32_characters_long
-JWT_REFRESH_SECRET=your_refresh_secret_also_32_chars_minimum
-
-# JWT Expiration
-JWT_EXPIRE=7d
-JWT_REFRESH_EXPIRE=30d
-
-# Cloudinary Configuration
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-
-# Frontend URL (for CORS)
-FRONTEND_URL=http://localhost:3000
-```
-
-**Security Notes:**
-- Never commit `.env` file to Git
-- Use strong, random secrets (32+ characters)
-- Rotate secrets regularly in production
-
-## Related Repositories
-
-- **Frontend App:** [savemate-frontend](https://github.com/jenfranx30/savemate-frontend)
-- **Documentation:** [savemate-docs](https://github.com/jenfranx30/savemate-docs)
-
-
-## Database Schema
-
-**Collections:**
-- `users` - User accounts (regular users and businesses)
-- `deals` - Deal/discount listings
-- `businesses` - Business profiles
-- `categories` - Deal categories
-
-**Full schema documentation:** See `savemate-docs` repository
-
-## Testing
+### **2. Create Virtual Environment (Optional but Recommended)**
 
 ```bash
-# Install dependencies
-npm install
+# Windows
+python -m venv venv
+venv\Scripts\activate
 
-# Run tests (to be implemented in Week 6)
-npm test
-
-# Test API endpoints with:
-# - Postman collection (coming soon)
-# - curl commands
-# - REST Client extension
+# macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-## Troubleshooting
+### **3. Install Dependencies**
 
-**Port 5000 already in use:**
 ```bash
-# Change PORT in .env file
-PORT=5001
+pip install -r requirements.txt
 ```
-
-**MongoDB connection error:**
-- Check MONGODB_URI in .env
-- Verify IP whitelist in MongoDB Atlas (0.0.0.0/0 for development)
-- Check database user credentials
-
-**Module not found:**
-```bash
-rm -rf node_modules package-lock.json
-npm install
-```
-
-## License
-
-Academic project for WSB University - Winter 2025-2026
 
 ---
 
-**Status:**  In Development  
-**Last Updated:** November 26, 2025
+## Configuration
+
+### **1. Create .env File**
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+### **2. Configure Environment Variables**
+
+Edit `.env` file with your settings:
+
+```env
+# MongoDB Configuration
+MONGODB_URL=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+DATABASE_NAME=savemate
+
+# JWT Configuration
+SECRET_KEY=your-super-secret-key-here-min-32-characters
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# CORS Configuration
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+
+# Application Configuration
+DEBUG=True
+API_V1_PREFIX=/api/v1
+PROJECT_NAME=SaveMate API
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=8000
+```
+
+### **3. Generate Secure SECRET_KEY**
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Copy the output and paste it as your `SECRET_KEY` in `.env`.
+
+### **4. Set Up MongoDB Atlas (Free)**
+
+1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register)
+2. Create a FREE M0 cluster
+3. Create a database user
+4. Whitelist your IP (0.0.0.0/0 for development)
+5. Get your connection string
+6. Update `MONGODB_URL` in `.env`
+
+---
+
+## Running the Server
+
+### **Development Mode (with auto-reload)**
+
+```bash
+uvicorn app.main:app --reload
+```
+
+### **Production Mode**
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### **Custom Port**
+
+```bash
+uvicorn app.main:app --reload --port 8001
+```
+
+### **Expected Output**
+
+```
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process
+🚀 Starting SaveMate API...
+✅ Connected to MongoDB database: savemate
+INFO:     Application startup complete.
+```
+
+---
+
+## API Documentation
+
+Once the server is running, access the interactive API documentation:
+
+### **Swagger UI (Interactive)**
+```
+http://localhost:8000/docs
+```
+
+### **ReDoc (Alternative)**
+```
+http://localhost:8000/redoc
+```
+
+### **OpenAPI JSON Schema**
+```
+http://localhost:8000/openapi.json
+```
+
+### **Health Check**
+```
+http://localhost:8000/health
+```
+
+---
+
+## Database Schema
+
+### **Collections**
+
+1. **users** - User accounts and profiles
+2. **deals** - Local deals and promotions
+3. **businesses** - Business information
+4. **categories** - Deal categories
+
+### **Key Features**
+- Geospatial indexes for location-based queries
+- Text indexes for search functionality
+- Reference relationships between collections
+- Automatic timestamp management
+
+---
+
+## Development
+
+### **Code Formatting**
+
+```bash
+black app/
+```
+
+### **Linting**
+
+```bash
+flake8 app/
+```
+
+### **Type Checking**
+
+```bash
+mypy app/
+```
+
+---
+
+## Testing
+
+### **Run All Tests**
+
+```bash
+pytest
+```
+
+### **Run with Coverage**
+
+```bash
+pytest --cov=app tests/
+```
+
+### **Run Specific Test File**
+
+```bash
+pytest tests/test_auth.py
+```
+
+---
+
+## Deployment
+
+### **Recommended Platforms**
+
+1. **Render** - Easy Python deployment
+2. **Railway** - Simple and fast
+3. **Heroku** - Classic PaaS
+4. **AWS/GCP/Azure** - Full control
+
+### **Environment Variables**
+
+Make sure to set all required environment variables in your deployment platform:
+- `MONGODB_URL`
+- `SECRET_KEY`
+- `ALLOWED_ORIGINS` (update with production URL)
+- `DEBUG=False`
+
+### **Production Checklist**
+
+- [ ] Set `DEBUG=False`
+- [ ] Use strong `SECRET_KEY`
+- [ ] Configure CORS with specific origins
+- [ ] Set up MongoDB Atlas production cluster
+- [ ] Enable SSL/TLS
+- [ ] Set up monitoring and logging
+- [ ] Configure rate limiting
+- [ ] Set up backup strategy
+
+---
+
+## Contributing
+
+We welcome contributions! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### **Coding Standards**
+
+- Follow PEP 8 style guide
+- Write docstrings for all functions/classes
+- Add type hints
+- Write tests for new features
+- Update documentation
+
+---
+
+## 👥 Team
+
+**SaveMate Development Team**
+
+- **Rustam Islamov** - Team Leader and Backend Developer
+- **Jenefer Yago** - Documentation and Full Stack Developer
+- **Mahammad Rustamov** - Frontend Developer
+- **Rustam Yariyev** - API Development
+- **Sadig Shikhaliyev** - API Development
+  
+**Course**: Agile Project Management
+**Professor**: Dawid Jurczyński
+**University**: WSB University, Dąbrowa Górnicza  
+**Semester**: Winter 2025-2026
+
+
+---
+
+## Acknowledgments
+
+- FastAPI for the amazing framework
+- MongoDB for flexible data storage
+- WSB University for project guidance
+- All contributors and team members
+
+---
+
+## 📈 Project Status
+
+**Current Phase**: Phase 1 Complete ✅  
+**Next Phase**: Database Models and Authentication  
+**Target Completion**: January 2026
+
+---
+
+## Related Repositories
+
+- [SaveMate Frontend](https://github.com/jenfranx30/savemate-frontend) - React application
+- [SaveMate Docs](https://github.com/jenfranx30/savemate-docs) - Project documentation
+
+---
+
+*Last Updated: November 22, 2025*
