@@ -84,8 +84,17 @@ async def api_info():
     }
 
 
-# We'll add API routes here later
-# from app.api.routes import auth, users, deals, categories
+# Import API routes
+from app.api.routes import auth
+
+# Register routers
+app.include_router(
+    auth.router,
+    prefix=settings.API_V1_PREFIX + "/auth",
+    tags=["Authentication"]
+)
+
+
 # app.include_router(auth.router, prefix=settings.API_V1_PREFIX, tags=["Authentication"])
 # app.include_router(users.router, prefix=settings.API_V1_PREFIX, tags=["Users"])
 # app.include_router(deals.router, prefix=settings.API_V1_PREFIX, tags=["Deals"])
