@@ -8,8 +8,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import init_db, close_db
-from app.models.deal import Deal
-from app.api.routes import deals
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -86,7 +85,7 @@ async def api_info():
 
 
 # Import API routes
-from app.api.routes import auth
+from app.api.routes import auth, deals, businesses, favorites, reviews
 
 # Register routers
 app.include_router(
@@ -101,7 +100,20 @@ app.include_router(
     tags=["Deals"]
 )
 
-# app.include_router(auth.router, prefix=settings.API_V1_PREFIX, tags=["Authentication"])
-# app.include_router(users.router, prefix=settings.API_V1_PREFIX, tags=["Users"])
-# app.include_router(deals.router, prefix=settings.API_V1_PREFIX, tags=["Deals"])
-# app.include_router(categories.router, prefix=settings.API_V1_PREFIX, tags=["Categories"])
+app.include_router(
+    businesses.router,
+    prefix=settings.API_V1_PREFIX + "/businesses",
+    tags=["Businesses"]
+)
+
+app.include_router(
+    favorites.router,
+    prefix=settings.API_V1_PREFIX + "/favorites",
+    tags=["Favorites"]
+)
+
+app.include_router(
+    reviews.router,
+    prefix=settings.API_V1_PREFIX + "/reviews",
+    tags=["Reviews"]
+)
