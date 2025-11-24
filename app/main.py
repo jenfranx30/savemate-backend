@@ -8,7 +8,8 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import init_db, close_db
-
+from app.models.deal import Deal
+from app.api.routes import deals
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -94,6 +95,11 @@ app.include_router(
     tags=["Authentication"]
 )
 
+app.include_router(
+    deals.router,
+    prefix=settings.API_V1_PREFIX + "/deals",
+    tags=["Deals"]
+)
 
 # app.include_router(auth.router, prefix=settings.API_V1_PREFIX, tags=["Authentication"])
 # app.include_router(users.router, prefix=settings.API_V1_PREFIX, tags=["Users"])
