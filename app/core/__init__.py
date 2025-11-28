@@ -1,29 +1,40 @@
 """
-Core module for SaveMate API
-
-This module contains core functionality like security, database connections, and configuration.
+Core module initialization
+Security utilities for SaveMate API
 """
 
+# Import security functions for convenient access
 from .security import (
-    hash_password,
+    get_password_hash,
     verify_password,
     create_access_token,
     create_refresh_token,
-    verify_access_token,
-    verify_refresh_token,
-    get_user_id_from_token,
-    validate_password_strength,
-    create_token_pair
+    decode_token,
+    get_current_user,
+    require_admin,
+    require_business,
+    require_admin_temp,
+    create_tokens_for_user,
+    verify_token_type
 )
 
 __all__ = [
-    "hash_password",
+    # Password hashing
+    "get_password_hash",
     "verify_password",
+    
+    # Token creation
     "create_access_token",
     "create_refresh_token",
-    "verify_access_token",
-    "verify_refresh_token",
-    "get_user_id_from_token",
-    "validate_password_strength",
-    "create_token_pair"
+    "create_tokens_for_user",
+    
+    # Token verification
+    "decode_token",
+    "verify_token_type",
+    
+    # Authentication dependencies
+    "get_current_user",
+    "require_admin",
+    "require_business",
+    "require_admin_temp",
 ]

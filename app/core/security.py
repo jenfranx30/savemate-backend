@@ -1,424 +1,299 @@
 """
-Security utilities for SaveMate API
-
-This module contains functions for password hashing, JWT token generation and verification,
-and authentication dependencies.
+Security utilities for password hashing, JWT tokens, and authentication
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
-from passlib.context import CryptContext
+from typing import Optional
 from jose import JWTError, jwt
-from fastapi import HTTPException, status, Depends
+from passlib.context import CryptContext
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from beanie import PydanticObjectId
-import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+from app.config import settings
+from app.models.user import User
+
+
+# ============================================================================
+# PASSWORD HASHING
+# ============================================================================
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT settings from environment variables
-SECRET_KEY = os.getenv("JWT_SECRET", "your-secret-key-change-this-in-production")
-REFRESH_SECRET_KEY = os.getenv("JWT_REFRESH_SECRET", "your-refresh-secret-key-change-this")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
-
-# Security scheme for FastAPI
-security = HTTPBearer()
-
-
-# ============================================================================
-# PASSWORD HASHING FUNCTIONS
-# ============================================================================
-
-def hash_password(password: str) -> str:
-    """
-    Hash a password using bcrypt
-
-    Args:
-        password: Plain text password
-
-    Returns:
-        Hashed password string
-    """
-    return pwd_context.hash(password)
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify a password against its hash
-
+    Verify a plain password against a hashed password
+    
     Args:
-        plain_password: Plain text password to verify
-        hashed_password: Hashed password to compare against
-
+        plain_password: The plain text password
+        hashed_password: The hashed password from database
+    
     Returns:
-        True if password matches, False otherwise
+        bool: True if password matches, False otherwise
     """
     return pwd_context.verify(plain_password, hashed_password)
 
 
+def get_password_hash(password: str) -> str:
+    """
+    Hash a password using bcrypt
+    
+    Args:
+        password: Plain text password
+    
+    Returns:
+        str: Hashed password
+    """
+    return pwd_context.hash(password)
+
+
 # ============================================================================
-# JWT TOKEN FUNCTIONS
+# JWT TOKEN CREATION
 # ============================================================================
 
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create a JWT access token
-
+    
     Args:
         data: Data to encode in the token (usually {"sub": user_id})
         expires_delta: Optional custom expiration time
-
+    
     Returns:
-        Encoded JWT token string
+        str: Encoded JWT token
     """
     to_encode = data.copy()
-
+    
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
+        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    
     to_encode.update({"exp": expire, "type": "access"})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
-def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+def create_refresh_token(data: dict) -> str:
     """
     Create a JWT refresh token
-
+    
     Args:
         data: Data to encode in the token (usually {"sub": user_id})
-        expires_delta: Optional custom expiration time
-
+    
     Returns:
-        Encoded JWT refresh token string
+        str: Encoded JWT refresh token
     """
     to_encode = data.copy()
-
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-
+    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
-    encoded_jwt = jwt.encode(to_encode, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
-
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
-def verify_access_token(token: str) -> Dict[str, Any]:
+# ============================================================================
+# JWT TOKEN DECODING
+# ============================================================================
+
+def decode_token(token: str) -> Optional[dict]:
     """
-    Verify and decode an access token
-
-    Args:
-        token: JWT access token to verify
-
-    Returns:
-        Decoded token payload
-
-    Raises:
-        HTTPException: If token is invalid or expired
-    """
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-        # Check token type
-        token_type = payload.get("type")
-        if token_type != "access":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        return payload
-
-    except JWTError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Could not validate credentials: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-def verify_refresh_token(token: str) -> Dict[str, Any]:
-    """
-    Verify and decode a refresh token
-
-    Args:
-        token: JWT refresh token to verify
-
-    Returns:
-        Decoded token payload
-
-    Raises:
-        HTTPException: If token is invalid or expired
-    """
-    try:
-        payload = jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
-
-        # Check token type
-        token_type = payload.get("type")
-        if token_type != "refresh":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type - expected refresh token",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        return payload
-
-    except JWTError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid refresh token: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-def decode_token(token: str, secret_key: str = SECRET_KEY) -> Dict[str, Any]:
-    """
-    Decode a JWT token without verification (use carefully!)
-
+    Decode and verify a JWT token
+    
     Args:
         token: JWT token to decode
-        secret_key: Secret key to use for decoding
-
+    
     Returns:
-        Decoded token payload
-
-    Raises:
-        JWTError: If token cannot be decoded
+        dict: Decoded token payload or None if invalid
     """
     try:
-        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
-    except JWTError as e:
-        raise JWTError(f"Could not decode token: {str(e)}")
+    except JWTError:
+        return None
 
 
 # ============================================================================
-# AUTHENTICATION DEPENDENCY
+# AUTHENTICATION DEPENDENCIES
 # ============================================================================
+
+# HTTP Bearer token scheme
+security = HTTPBearer()
+
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> str:
+) -> User:
     """
-    FastAPI dependency to get current authenticated user
-
-    Extracts JWT token from Authorization header, validates it,
-    and returns the user ID.
-
+    Get the current authenticated user from JWT token
+    
     Args:
-        credentials: HTTP Bearer token from Authorization header
-
+        credentials: HTTP Bearer credentials from request header
+    
     Returns:
-        User ID string from token
-
+        User: The authenticated user object
+    
     Raises:
-        HTTPException 401: If token is invalid, expired, or missing
-        HTTPException 404: If user not found in database (optional check)
+        HTTPException: 401 if token is invalid or user not found
+    """
+    # Extract token
+    token = credentials.credentials
+    
+    # Decode token
+    payload = decode_token(token)
+    
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Extract user ID from token
+    user_id: str = payload.get("sub")
+    
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Get user from database
+    user = await User.get(user_id)
+    
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return user
 
-    Usage in routes:
-        @router.post("/protected")
-        async def protected_route(current_user_id: str = Depends(get_current_user)):
-            # Use current_user_id here
+
+async def require_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """
+    Require admin role for protected endpoints
+    
+    This dependency checks if the authenticated user has admin privileges.
+    Use this for endpoints that should only be accessible to administrators.
+    
+    Usage:
+        @router.post("/admin-only-endpoint")
+        async def admin_endpoint(current_user: User = Depends(require_admin)):
+            # Only admins can access this
             pass
-    """
-    token = credentials.credentials
-
-    try:
-        # Verify and decode token
-        payload = verify_access_token(token)
-        user_id: str = payload.get("sub")
-
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User ID not found in token",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # Optional: Verify user exists in database
-        # Uncomment if you want to check user existence on every request
-        # from app.models.user import User
-        # try:
-        #     user = await User.get(PydanticObjectId(user_id))
-        #     if not user:
-        #         raise HTTPException(
-        #             status_code=status.HTTP_404_NOT_FOUND,
-        #             detail="User not found"
-        #         )
-        #     if not user.is_active:
-        #         raise HTTPException(
-        #             status_code=status.HTTP_403_FORBIDDEN,
-        #             detail="User account is inactive"
-        #         )
-        # except Exception as e:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_404_NOT_FOUND,
-        #         detail=f"User not found: {str(e)}"
-        #     )
-
-        return user_id
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid authentication credentials: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-async def get_current_active_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> Dict[str, Any]:
-    """
-    FastAPI dependency to get current authenticated user with full user data
-
-    Similar to get_current_user but returns the full user object from database.
-    Use this when you need user information beyond just the ID.
-
+    
     Args:
-        credentials: HTTP Bearer token from Authorization header
-
+        current_user: The authenticated user (injected by get_current_user)
+    
     Returns:
-        User object from database
-
+        User: The authenticated admin user
+    
     Raises:
-        HTTPException: If token is invalid or user not found
+        HTTPException: 403 if user is not an admin
     """
-    from app.models.user import User
-
-    token = credentials.credentials
-
-    try:
-        payload = verify_access_token(token)
-        user_id: str = payload.get("sub")
-
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User ID not found in token",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # Get user from database
-        user = await User.get(PydanticObjectId(user_id))
-
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-
-        if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User account is inactive"
-            )
-
-        return user
-
-    except HTTPException:
-        raise
-    except Exception as e:
+    # Option 1: Check if user has 'is_admin' field
+    if not getattr(current_user, 'is_admin', False):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Could not validate credentials: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required. You don't have permission to perform this action."
         )
+    
+    # Option 2: Check if user has 'role' field set to 'admin'
+    # Uncomment this if you use role-based system instead of is_admin flag
+    # user_role = getattr(current_user, 'role', None)
+    # if user_role != 'admin':
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Admin access required. You don't have permission to perform this action."
+    #     )
+    
+    # Option 3: Check if user is a business owner (for business-specific admin actions)
+    # Uncomment this if business owners should have admin access
+    # if not getattr(current_user, 'is_business', False):
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Business account required. You don't have permission to perform this action."
+    #     )
+    
+    return current_user
+
+
+async def require_business(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """
+    Require business account for protected endpoints
+    
+    Use this for endpoints that should only be accessible to business accounts
+    (e.g., creating deals, managing business profile)
+    
+    Args:
+        current_user: The authenticated user (injected by get_current_user)
+    
+    Returns:
+        User: The authenticated business user
+    
+    Raises:
+        HTTPException: 403 if user is not a business account
+    """
+    if not getattr(current_user, 'is_business', False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Business account required. Please upgrade to a business account to access this feature."
+        )
+    
+    return current_user
 
 
 # ============================================================================
-# TOKEN EXTRACTION HELPERS
+# TEMPORARY TESTING HELPER (Remove in production)
 # ============================================================================
 
-def get_user_id_from_token(token: str) -> str:
+async def require_admin_temp(
+    current_user: User = Depends(get_current_user)
+) -> User:
     """
-    Extract user ID from an access token
-
+    TEMPORARY: Allow any authenticated user to act as admin
+    
+    ⚠️ WARNING: This is for testing/development only!
+    Use this temporarily if your User model doesn't have is_admin field yet.
+    
+    Replace with proper require_admin once User model is updated.
+    
     Args:
-        token: JWT access token
-
+        current_user: The authenticated user
+    
     Returns:
-        User ID string
-
-    Raises:
-        HTTPException: If token is invalid or user ID not found
+        User: The authenticated user (treated as admin)
     """
-    payload = verify_access_token(token)
-    user_id = payload.get("sub")
-
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User ID not found in token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return user_id
+    # TODO: Remove this function and use require_admin instead
+    return current_user
 
 
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
 
-def validate_password_strength(password: str) -> tuple[bool, str]:
-    """
-    Validate password strength
-
-    Args:
-        password: Password to validate
-
-    Returns:
-        Tuple of (is_valid, error_message)
-    """
-    if len(password) < 8:
-        return False, "Password must be at least 8 characters long"
-
-    if not any(char.isdigit() for char in password):
-        return False, "Password must contain at least one digit"
-
-    if not any(char.isupper() for char in password):
-        return False, "Password must contain at least one uppercase letter"
-
-    if not any(char.islower() for char in password):
-        return False, "Password must contain at least one lowercase letter"
-
-    # Optional: Check for special characters
-    # special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
-    # if not any(char in special_chars for char in password):
-    #     return False, "Password must contain at least one special character"
-
-    return True, ""
-
-
-def create_token_pair(user_id: str) -> Dict[str, str]:
+def create_tokens_for_user(user_id: str) -> dict:
     """
     Create both access and refresh tokens for a user
-
+    
+    Convenience function to create both tokens at once (e.g., during login)
+    
     Args:
-        user_id: User's unique identifier
-
+        user_id: The user's ID
+    
     Returns:
-        Dictionary with access_token and refresh_token
+        dict: Dictionary with 'access_token' and 'refresh_token'
     """
     access_token = create_access_token(data={"sub": user_id})
     refresh_token = create_refresh_token(data={"sub": user_id})
-
+    
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -426,42 +301,56 @@ def create_token_pair(user_id: str) -> Dict[str, str]:
     }
 
 
-# ============================================================================
-# CONFIGURATION INFO (for debugging)
-# ============================================================================
-
-def get_security_config_info() -> Dict[str, Any]:
+def verify_token_type(token: str, expected_type: str) -> bool:
     """
-    Get current security configuration (for debugging only)
-
+    Verify that a token is of the expected type (access or refresh)
+    
+    Args:
+        token: JWT token to verify
+        expected_type: Expected token type ("access" or "refresh")
+    
     Returns:
-        Dictionary with configuration information
+        bool: True if token type matches, False otherwise
     """
-    return {
-        "algorithm": ALGORITHM,
-        "access_token_expire_minutes": ACCESS_TOKEN_EXPIRE_MINUTES,
-        "refresh_token_expire_days": REFRESH_TOKEN_EXPIRE_DAYS,
-        "secret_key_configured": bool(SECRET_KEY and SECRET_KEY != "your-secret-key-change-this-in-production"),
-        "refresh_secret_configured": bool(REFRESH_SECRET_KEY and REFRESH_SECRET_KEY != "your-refresh-secret-key-change-this")
-    }
+    payload = decode_token(token)
+    
+    if payload is None:
+        return False
+    
+    token_type = payload.get("type")
+    return token_type == expected_type
 
 
-if __name__ == "__main__":
-    # Test the module
-    print("Security module loaded successfully!")
-    print(f"Configuration: {get_security_config_info()}")
+# ============================================================================
+# NOTES FOR USER MODEL
+# ============================================================================
 
-    # Test password hashing
-    test_password = "TestPassword123"
-    hashed = hash_password(test_password)
-    print(f"\nPassword hashing test:")
-    print(f"Original: {test_password}")
-    print(f"Hashed: {hashed}")
-    print(f"Verification: {verify_password(test_password, hashed)}")
+"""
+To use require_admin, your User model needs one of these fields:
 
-    # Test token creation
-    test_user_id = "test_user_123"
-    tokens = create_token_pair(test_user_id)
-    print(f"\nToken creation test:")
-    print(f"Access token: {tokens['access_token'][:50]}...")
-    print(f"Refresh token: {tokens['refresh_token'][:50]}...")
+Option 1 - Boolean flag (RECOMMENDED):
+    class User(Document):
+        # ... other fields ...
+        is_admin: bool = Field(
+            default=False,
+            description="Whether user has admin privileges"
+        )
+
+Option 2 - Role-based:
+    class User(Document):
+        # ... other fields ...
+        role: str = Field(
+            default="user",
+            description="User role: 'user', 'business', or 'admin'"
+        )
+
+Option 3 - Business flag (for business admin):
+    class User(Document):
+        # ... other fields ...
+        is_business: bool = Field(
+            default=False,
+            description="Whether user is a business account"
+        )
+
+Choose Option 1 for simplest implementation!
+"""

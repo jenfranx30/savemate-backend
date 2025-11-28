@@ -18,12 +18,16 @@ from app.schemas.auth_schema import (
     RefreshTokenRequest,
     UserResponse
 )
+
+# ============================================================================
+# UPDATED IMPORTS - Changed to match new security.py
+# ============================================================================
 from app.core.security import (
-    hash_password,
+    get_password_hash,      # ← Changed from hash_password
     verify_password,
     create_access_token,
     create_refresh_token,
-    verify_refresh_token
+    decode_token           # ← Changed from verify_refresh_token
 )
 
 # Create router instance
@@ -67,8 +71,8 @@ async def register(user_data: UserRegister):
                 detail="Username already taken"
             )
 
-        # Hash the password
-        hashed_password = hash_password(user_data.password)
+        # Hash the password - UPDATED FUNCTION NAME
+        hashed_password = get_password_hash(user_data.password)  # ← Changed from hash_password
 
         # Create new user
         new_user = User(
@@ -217,8 +221,23 @@ async def refresh_token(token_data: RefreshTokenRequest):
         HTTPException: If refresh token is invalid or user not found
     """
     try:
-        # Verify refresh token
-        payload = verify_refresh_token(token_data.refresh_token)
+        # Verify refresh token - UPDATED TO USE decode_token
+        payload = decode_token(token_data.refresh_token)  # ← Changed from verify_refresh_token
+        
+        if payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token"
+            )
+        
+        # Verify token type is 'refresh'
+        token_type = payload.get("type")
+        if token_type != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type. Expected refresh token."
+            )
+        
         user_id = payload.get("sub")
 
         if not user_id:
@@ -263,11 +282,8 @@ async def refresh_token(token_data: RefreshTokenRequest):
 
 
 # ============================================================================
-# OPTIONAL: LOGOUT ENDPOINT (Token Blacklisting)
+# LOGOUT ENDPOINT
 # ============================================================================
-
-# Note: Since JWTs are stateless, true logout requires token blacklisting
-# This is a placeholder for future implementation
 
 @router.post("/logout")
 async def logout():
@@ -285,19 +301,31 @@ async def logout():
         "success": True
     }
 
+
 # ============================================================================
-# OPTIONAL: GET CURRENT USER ENDPOINT
+# GET CURRENT USER ENDPOINT
 # ============================================================================
 
-# This would require authentication middleware - can be added later
-# Example:
-# @router.get("/me", response_model=UserResponse)
-# async def get_current_user(current_user: User = Depends(get_current_user)):
-#     """Get current authenticated user"""
-#     return UserResponse(
-#         id=str(current_user.id),
-#         email=current_user.email,
-#         username=current_user.username,
-#         full_name=current_user.full_name,
-#         is_business_owner=current_user.is_business_owner
-#     )
+# Import get_current_user from security
+from app.core.security import get_current_user
+from fastapi import Depends
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """
+    Get current authenticated user
+    
+    Requires valid JWT token in Authorization header.
+    
+    Returns:
+        UserResponse with current user information
+    """
+    return UserResponse(
+        id=str(current_user.id),
+        email=current_user.email,
+        username=current_user.username,
+        full_name=current_user.full_name,
+        is_business_owner=current_user.is_business_owner,
+        created_at=current_user.created_at if hasattr(current_user, 'created_at') else None
+    )

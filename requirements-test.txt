@@ -1,0 +1,44 @@
+# Testing Dependencies for SaveMate Backend
+
+# Core Testing Framework
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+
+# HTTP Client for API Testing
+httpx==0.25.2
+
+# Test Data Generation
+faker==20.1.0
+
+# Additional Testing Tools
+pytest-mock==3.12.0
+pytest-timeout==2.2.0
+```
+
+**Save and close!**
+
+---
+
+## 📂 **YOUR FILE STRUCTURE SHOULD BE:**
+```
+savemate-backend/
+├── app/
+│   ├── __pycache__/
+│   ├── api/
+│   ├── core/
+│   ├── middleware/
+│   ├── models/
+│   ├── schemas/
+│   ├── services/
+│   ├── tests/              
+│   │   ├── __init__.py     
+│   │   ├── conftest.py     
+│   │   └── test_deals.py   
+│   ├── utils/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── database.py
+│   └── main.py
+├── pytest.ini              
+└── requirements-test.txt   
