@@ -72,6 +72,78 @@ SaveMate is a full-stack web application that helps users discover and save mone
 - 🔄 Admin dashboard
 
 ---
+## 🗂️ Category Management
+
+### Overview
+Categories organize deals into logical groups (Food and Dining, Shopping, Entertainment, etc.).
+
+### Features
+- ✅ Hierarchical categories (parent-child relationships)
+- ✅ Featured categories for homepage
+- ✅ Category statistics and analytics
+- ✅ Search and filtering
+- ✅ Admin-only management
+- ✅ Public browsing
+
+### API Endpoints
+
+#### Public Endpoints (No Authentication)
+```
+GET  /api/v1/categories/              - List all categories with pagination
+GET  /api/v1/categories/featured      - Get featured categories
+GET  /api/v1/categories/slug/{slug}   - Get category by slug
+GET  /api/v1/categories/{id}          - Get category by ID
+GET  /api/v1/categories/stats/overview - Get statistics
+```
+
+#### Admin Endpoints (Authentication Required)
+```
+POST   /api/v1/categories/     - Create new category
+PUT    /api/v1/categories/{id} - Update category
+DELETE /api/v1/categories/{id} - Delete category
+```
+
+### Admin Management
+
+#### Make a User Admin
+```bash
+python scripts/make_admin.py
+# Select option 1
+# Enter user email
+```
+
+#### List All Admins
+```bash
+python scripts/make_admin.py
+# Select option 3
+```
+
+### Sample Categories
+```json
+{
+  "name": "Food & Dining",
+  "slug": "food-dining",
+  "description": "Restaurants, cafes, and food delivery services",
+  "icon": "🍔",
+  "color": "#EF4444",
+  "is_featured": true
+}
+```
+
+### Testing
+```bash
+# Run category tests
+pytest app/tests/test_categories.py -v
+
+# Run with coverage
+pytest app/tests/test_categories.py --cov=app.models.category --cov=app.schemas.category_schema --cov-report=term-missing
+```
+
+### Coverage
+- Model: 83%
+- Schemas: 96%
+- Overall: 83%+
+
 
 ## 🛠️ Tech Stack
 
