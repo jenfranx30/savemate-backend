@@ -4,29 +4,26 @@ SaveMate API - MongoDB/Beanie
 """
 
 from beanie import Document
+from pydantic import Field, EmailStr
 from datetime import datetime
-
+from typing import Optional
 
 class User(Document):
-    """
-    User document - CRITICAL: password_hash is ALREADY hashed!
-    Do NOT add ANY validators, @before_event, or properties that touch password_hash!
-    """
-    email: str
-    username: str
-    password_hash: str  # ALREADY HASHED - DO NOT TOUCH
-    full_name: str
-    is_business_owner: bool = False
-    is_active: bool = True
-    is_verified: bool = False
-    created_at: datetime = datetime.utcnow()
-
+    email: EmailStr = Field(..., unique=True)
+    username: str = Field(..., unique=True)
+    password_hash: str
+    full_name: Optional[str] = None
+    is_business_owner: bool = Field(default=False)
+    
+    # ADD THIS FIELD ⬇️
+    is_admin: bool = Field(
+        default=False,
+        description="Admin privileges for managing categories and system settings"
+    )
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
     class Settings:
         name = "users"
         indexes = ["email", "username"]
-
-# NO @before_event
-# NO @validator
-# NO properties
-# NO __init__ override
-# NOTHING that touches password_hash!
